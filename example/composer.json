@@ -1,0 +1,25 @@
+{
+    "name": "majsterkoo/rabbitmq-php-fpm-consumer-example",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michal Procházka",
+            "email": "mich.procha@prochiweb.cz"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "majsterkoo\\RabbitmqPhpFpmConsumerExample\\": "src/"
+        }
+    },
+    "repositories": [{
+        "type": "path",
+        "url": "../"
+    }],
+    "require": {
+        "majsterkoo/rabbitmq-php-fpm-consumer": "0.0.1",
+        "hollodotme/fast-cgi-client": "^3.1",
+        "php-amqplib/php-amqplib": "^3.0"
+    }
+}

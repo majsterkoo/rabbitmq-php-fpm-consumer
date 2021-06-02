@@ -1,0 +1,18 @@
+{
+    "name": "majsterkoo/rabbitmq-php-fpm-worker-example",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michal Procházka",
+            "email": "mich.procha@prochiweb.cz"
+        }
+    ],
+    "repositories": [{
+        "type": "path",
+        "url": "../"
+    }],
+    "require": {
+        "majsterkoo/rabbitmq-php-fpm-consumer": "0.0.1"
+    }
+}

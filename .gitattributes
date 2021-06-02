@@ -1,0 +1,7 @@
+/.github export-ignore
+/tests export-ignore
+/example export-ignore
+/example-php-fpm-worker export-ignore
+
+.gitignore export-ignore
+.gitattributes export-ignore

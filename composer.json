@@ -1,0 +1,23 @@
+{
+    "name": "majsterkoo/rabbitmq-php-fpm-consumer",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.0.1",
+    "authors": [
+        {
+            "name": "Michal Procházka",
+            "email": "mich.procha@prochiweb.cz"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "majsterkoo\\RabbitmqPhpFpmConsumer\\": "src/"
+        }
+    },
+    "require": {
+        "php-amqplib/php-amqplib": "^3.0"
+    },
+    "require-dev": {
+        "jetbrains/phpstorm-attributes": "^1.0"
+    }
+}
