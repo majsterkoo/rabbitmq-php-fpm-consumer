@@ -46,6 +46,8 @@ class Consumer {
     * @param FastCGIContainer $fast_cgi_container
     * @param ?MessageRouter $message_router
     * @param ?int $retry_count
+    * @param int $prefetch_count How many works can run at one time
+    * @param string $consumer_tag
     */
    public function __construct(
       private string $queue_name,
@@ -53,6 +55,8 @@ class Consumer {
       private FastCGIContainer $fast_cgi_container,
       private ?MessageRouter $message_router = null,
       private ?int $retry_count = null,
+      private int $prefetch_count = 5,
+      private string $consumer_tag = '',
    ){}
 
    public function setMessageRouter(MessageRouter $message_router){
@@ -199,11 +203,11 @@ class Consumer {
          //$request = new PostRequest($fast_cgi_container->script_folder . $script, $body);
       };
 
-      $channel->basic_qos(null, 5, null);
+      $channel->basic_qos(prefetch_size: null, prefetch_count: $this->prefetch_count, a_global: false);
 
       $channel->basic_consume(
          queue: $this->queue_name,
-         consumer_tag: '',
+         consumer_tag: $this->consumer_tag,
          no_local: false,
          no_ack: false,
          exclusive: false,
