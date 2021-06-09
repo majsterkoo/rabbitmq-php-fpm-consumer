@@ -1,3 +1,5 @@
+- working example in example folder. Docs in progress!
+
 ## env file
 | name | default_value | definition |
 | ---- | ------------- | ---------- |
