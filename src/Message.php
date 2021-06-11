@@ -47,12 +47,12 @@ class Message implements Stringable{
 
    /**
     * Message constructor.
-    * @param ?string $payload
+    * @param mixed $payload
     * @param int $retry_count
     * @param FallbackExchange|null $fallback_exchange
     */
    public function __construct(mixed $payload = null, int $retry_count = 1, ?FallbackExchange $fallback_exchange = null){
-      $this->payload = $payload;
+      $this->setPayload($payload);
       $this->setRetryCount($retry_count);
       $this->fallback_exchange = $fallback_exchange;
    }
@@ -168,6 +168,7 @@ class Message implements Stringable{
    /**
     * @param FallbackExchange $fallback_exchange
     * @return $this
+    * @return $this
     */
    public function setFallbackExchange(FallbackExchange $fallback_exchange): self{
       $this->fallback_exchange = $fallback_exchange;
@@ -234,18 +235,22 @@ class Message implements Stringable{
     * Parsing message from (json) string. If message is not recognized as stringified Message object, the message string
     * will be passed to payload or throw exception (if STRICT_MESSAGE=true is set in .env file)
     * @param string $stringified_message
+    * @param bool $is_message_object flag if message is encoded Message class or not
     * @return Message
-    * @throws \Exception
+    * @throws \JsonException
     */
-   public function parseFromString(string $stringified_message): Message{
+   public function parseFromString(string $stringified_message, bool $is_message_object = false): Message{
       try{
-         $message = json_decode(json: $stringified_message, associative: true, flags: JSON_THROW_ON_ERROR);
-         if(is_array($message)) {
-            $this->parseFromArray($message);
+         if($is_message_object == true) {
+            $message = json_decode(json: $stringified_message, associative: true, flags: JSON_THROW_ON_ERROR);
+            if (is_array($message)) {
+               $this->parseFromArray($message);
+            }
+            else throw new \Exception('Message couldn\'t be parsed into Message class!');
          }
          //if $stringified_message is not array, we pass it to payload
          else{
-            $this->payload = $message;
+            $this->payload = $stringified_message;
          }
 
       }
@@ -278,11 +283,11 @@ class Message implements Stringable{
     * @return Message
     */
    public function parseFromArray(array $message): Message{
-      if(isset($message['payload'])) $this->payload = $message['payload'];
-      if(isset($message['error'])) $this->error = $message['error'];
-      if(isset($message['exchange'])) $this->exchange = $message['exchange'];
-      if(isset($message['routing_key'])) $this->routing_key = $message['routing_key'];
-      if(isset($message['worker_result'])) $this->worker_result = $message['worker_result'];
+      if(array_key_exists('payload', $message)) $this->payload = $message['payload'];
+      if(array_key_exists('error', $message)) $this->error = $message['error'];
+      if(array_key_exists('exchange', $message)) $this->exchange = $message['exchange'];
+      if(array_key_exists('routing_key', $message)) $this->routing_key = $message['routing_key'];
+      if(array_key_exists('worker_result', $message)) $this->worker_result = $message['worker_result'];
       return $this;
    }
 
@@ -326,7 +331,6 @@ class Message implements Stringable{
          'payload' => $this->payload,
          'exchange' => $this->exchange,
          'routing_key' => $this->routing_key,
-
       ];
    }
 }

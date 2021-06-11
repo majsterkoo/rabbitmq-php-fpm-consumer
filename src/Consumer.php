@@ -31,12 +31,13 @@ use hollodotme\FastCGI\Interfaces\ProvidesResponseData;
 use hollodotme\FastCGI\Requests\PostRequest;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use phpseclib3\Math\BigInteger\Engines\PHP;
+use PhpAmqpLib\Wire\AMQPTable;
 
 class Consumer {
 
    private ?FallbackExchange $fallback_exchange = null;
    private array $exchange_bindings = [ ];
+   private string $content_type = 'application/vnd.rabbitmq-fpm-consumer.Message';
 
 
    /**
@@ -96,8 +97,13 @@ class Consumer {
       $callback = function(AMQPMessage $message) use ($channel,/*$fpmClient, $fpm_socket, $dockerdir, $routing_to_script,*/ $fast_cgi_container){
          //$script = $routingToScript($message->getRoutingKey());
          echo 'dosla zprava' . PHP_EOL;
+         $headers = $message->get('application_headers')->getNativeData();
+         $is_message_object = false;
+         if(array_key_exists('Content-Type', $headers) && ($headers['Content-Type'] == $this->content_type)) {
+            $is_message_object = true;
+         }
          //prepare message to pass it into fast cgi
-         $message_class = (new Message())->parseFromString($message->getBody());
+         $message_class = (new Message())->parseFromString($message->getBody(), $is_message_object);
 
          //if message is resending from own queue, we detect routing_key and exchange from Message object
          if(empty($message->getExchange()) && $message->getRoutingKey() === $this->queue_name){
@@ -146,11 +152,11 @@ class Consumer {
                //in this situation we can use local logging for resolve the problem that occurred
                if(!$message_class->retryLimitReachMaximum()) {
                   $message_class->setFailed($ex->getMessage());
-                  echo $message_class . PHP_EOL;
+                  //echo $message_class . PHP_EOL;
                   $fallback_exchange = $message_class->getFallbackExchange() ?? $this->fallback_exchange;
                   if ($fallback_exchange !== null && $fallback_exchange->exchange_name !== null) {
                      //TODO maybe, we can add property bool $publish_only_payload in FallbackExchange to publishing only payload of Message class instead of whole message.
-                     $channel->basic_publish(new AMQPMessage($message_class), $fallback_exchange->exchange_name, $fallback_exchange->routing_key ?? $this->queue_name);
+                     $channel->basic_publish($this->AMQPMessageWithHeaders($message_class->__toString()), $fallback_exchange->exchange_name, $fallback_exchange->routing_key ?? $this->queue_name);
                   }
                }
                return;
@@ -160,7 +166,7 @@ class Consumer {
                $channel->basic_ack($message->getDeliveryTag());
                //if we want send message back to rabbit
                if($message_class->hasMessageResponse()){
-                  $res_message = new AMQPMessage($message_class->getMessageResponse());
+                  $res_message = $this->AMQPMessageWithHeaders($message_class->getMessageResponse()->__toString());
                   $channel->basic_publish($res_message, $message_class->getExchange(), $message_class->getRoutingKey());
                }
             }
@@ -169,10 +175,11 @@ class Consumer {
                if($message_class->getRetryCount() === -1) return;
                //if we NOT reached the limit of retrying then resend message
                if(!$message_class->retryLimitReachMaximum()){
-                  echo 'We not reach the maximum limit!' . PHP_EOL;
+                  //echo 'We not reach the maximum limit!' . PHP_EOL;
                   //here we used Serialize interface and send back to rabbit with exchange and routing key name, because in other way this information will be lost (sending
                   //directly to this queue, not original exchange - because we won't publish error message to original exchange!)
                   $message->setBody($message_class);
+                  $message->set('application_headers', $this->getContentTypeHeader());
                   //publishing back to the queue, not exchange!
                   $channel->basic_publish($message, routing_key: $this->queue_name/*$routing_key*/);
                }
@@ -181,7 +188,7 @@ class Consumer {
                   $fallback_exchange = $message_class->getFallbackExchange() ?? $this->fallback_exchange;
                   if($fallback_exchange !== null && $fallback_exchange->exchange_name !== null){
                      //TODO maybe, we can add property bool $publish_only_payload in FallbackExchange to publishing only payload of Message class instead of whole message.
-                     $channel->basic_publish(new AMQPMessage($message_class), $fallback_exchange->exchange_name, $fallback_exchange->routing_key ?? $this->queue_name);
+                     $channel->basic_publish($this->AMQPMessageWithHeaders($message_class->__toString()), $fallback_exchange->exchange_name, $fallback_exchange->routing_key ?? $this->queue_name);
                   }
                }
             }
@@ -232,6 +239,18 @@ class Consumer {
       }
 
       $channel->close();
+   }
+
+   private function getContentTypeHeader(): AMQPTable{
+      return new AMQPTable([
+         'Content-Type' => $this->content_type,
+      ]);
+   }
+
+   private function AMQPMessageWithHeaders(string $payload): AMQPMessage{
+      $message = new AMQPMessage($payload);
+      $message->set('application_headers', $this->getContentTypeHeader());
+      return $message;
    }
 
    private function createChannel(){

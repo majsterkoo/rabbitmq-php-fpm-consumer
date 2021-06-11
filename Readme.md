@@ -1,5 +1,10 @@
 - working example in example folder. Docs in progress!
 
+## Sending stringified Message class throught rabbitmq 
+- if you want to send Message class throught rabbitmq, you must specify Content-Type in header to 
+  'application/vnd.rabbitmq-fpm-consumer.Message'.
+- if this header is not set, then whole message will be pass into $payload property of Message class.
+
 ## env file
 | name | default_value | definition |
 | ---- | ------------- | ---------- |
