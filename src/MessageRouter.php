@@ -11,20 +11,20 @@ class MessageRouter {
     * TopicRouter constructor.
     * @param array $topics
     */
-   #[ArrayShape([ 'routing_key' => 'string', 'script' => 'string', 'exchange' => 'null|string', 'retry_count' => 'int'])]
+   #[ArrayShape([ 'routing_key' => 'string', 'script' => 'string', 'exchange' => 'string', 'retry_count' => 'int'])]
    public function __construct(array $topics) {
       foreach($topics as $topic){
-         $this->addTopicScript($topic['script'], $topic['routing_key']??'', $topic['exchange'], $topic['retry_count']??null);
+         $this->addTopicScript($topic['script'], $topic['routing_key']??'', $topic['exchange']??'', $topic['retry_count']??null);
       }
    }
 
    /**
     * @param mixed $script_name Script name or function returning script name
     * @param string $routing_key
-    * @param ?string $exchange_name Name of exchange from where message was send
+    * @param string $exchange_name Name of exchange from where message was send
     * @throws \Exception When script_name is not allowed type
     */
-   public function addTopicScript(mixed $script_name, string $routing_key = '', ?string $exchange_name = null, ?int $retry_count = null): void{
+   public function addTopicScript(mixed $script_name, string $routing_key = '', string $exchange_name = '', ?int $retry_count = null): void{
       if(is_string($script_name) || is_callable($script_name)){
 
          // Duplicate definition detection
@@ -40,11 +40,11 @@ class MessageRouter {
 
    /**
     * @param string $routing_key
-    * @param string|null $exchange
+    * @param string $exchange
     * @param Message|null $message
     * @return string|null
     */
-   public function messageToScript(string $routing_key, ?string $exchange = null, ?Message $message = null): ?string{
+   public function messageToScript(string $routing_key, string $exchange = '', ?Message $message = null): ?string{
       $script = null;
       //echo $routing_key . ' ' . $exchange . ' ' . $message . PHP_EOL;
       //print_r($this->scripts);
@@ -66,7 +66,13 @@ class MessageRouter {
 
    }
 
-   public function messageRetryCount(string $routing_key, ?string $exchange = null, ?Message $message = null): ?int{
+   /**
+    * @param string $routing_key
+    * @param string $exchange
+    * @param Message|null $message
+    * @return int|null
+    */
+   public function messageRetryCount(string $routing_key, string $exchange = '', ?Message $message = null): ?int{
       $retry_count = null;
 
       if(in_array($exchange, array_keys($this->scripts))){
