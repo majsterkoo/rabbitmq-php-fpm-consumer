@@ -97,10 +97,14 @@ class Consumer {
       $callback = function(AMQPMessage $message) use ($channel,/*$fpmClient, $fpm_socket, $dockerdir, $routing_to_script,*/ $fast_cgi_container){
          //$script = $routingToScript($message->getRoutingKey());
          echo 'dosla zprava' . PHP_EOL;
-         $headers = $message->get('application_headers')->getNativeData();
          $is_message_object = false;
-         if(array_key_exists('Content-Type', $headers) && ($headers['Content-Type'] == $this->content_type)) {
-            $is_message_object = true;
+         try {
+            $headers = $message->get('application_headers')->getNativeData();
+            if (array_key_exists('Content-Type', $headers) && ($headers['Content-Type'] == $this->content_type)) {
+               $is_message_object = true;
+            }
+         } catch(\Exception $ex){
+
          }
          //prepare message to pass it into fast cgi
          $message_class = (new Message())->parseFromString($message->getBody(), $is_message_object);
